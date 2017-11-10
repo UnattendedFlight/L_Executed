@@ -205,15 +205,15 @@ if len(found) > 1:
 print("Found {} result{}.. ".format(len(found), pl))
 input()
 cc = 0
-maxOnScreen = 3
+maxOnScreen = 1
 
 print('##########################################################################################')
 for each in found:
 	if cc >= maxOnScreen:
 		cc = 0
-		if not args.format:
-			print("Press enter to view more \n...")
-			input()
+		# if not args.format:
+		print("Press enter to view more \n...")
+		input()
 	cc += 1
 	if args.format:
 		if args.format[0].lower() == 'dict':
@@ -232,20 +232,33 @@ for each in found:
 	for hh in kk:
 		first += hh
 	link = "http://murderpedia.org/{}.{}/{}/{}.htm".format(found[found.index(each)]['Sex'].lower(), found[found.index(each)]['Name'].split()[len(found[found.index(each)]['Name'].split())-1][:1], found[found.index(each)]['Name'].split()[len(found[found.index(each)]['Name'].split())-1][:1].lower(), first)
+	alphaTest_link = 'https://www.google.com/search'
+	query = {'q': found[found.index(each)]['Name'] + " Murderpedia"}
+	print("\rLoading additional data from murderpedia..", end='\r')
+	data = requests.get(alphaTest_link, params=query)
+	debug(str(data.status_code) + " " + str(responses[data.status_code][0]) + " | " + data.url, "request")
+	soup = BeautifulSoup(data.content, 'html.parser')
+	td = soup.find_all('h3')
+	debug("Locating murderpedia url..", "parse")
+	if 'murderpedia.org' in td[0].a['href'][7:].split('&')[0]:
+		link = td[0].a['href'][7:].split('&')[0]
+		debug("Murderpedia link located! | " + str(td[0].a['href']), "parse")
 	data = requests.get(link)
 	debug(str(data.status_code) + " " + str(responses[data.status_code][0]) + " | " + link, "request")
 	dd = "Not Found"
 	printstuff = []
 	printstuffDict = {}
 	if data.status_code == 200:
-		dd = data.text
-		soup = BeautifulSoup(dd, 'html.parser')
+		dd = data.content
+		soup = BeautifulSoup(data.content, 'html.parser')
 		td = soup.find_all('td')
+
+
 		con = False
 		for c in td:
 			if found[found.index(each)]['Name'].split()[:1][0] in td[td.index(c)].get_text().strip().split():
 				con = True
-			if "Status" in td[td.index(c)].get_text().strip():
+			if "contact" in td[td.index(c)].get_text().strip():
 				break
 			if con:
 				try:
@@ -258,11 +271,12 @@ for each in found:
 				except:
 					printstuff.append(td[td.index(c)].get_text().strip())
 					printstuffDict[td[td.index(c)].get_text().strip().split(':')[0]] = td[td.index(c)].get_text().strip().split()
+	print("\r                                                                      ", end='\r')
 	if args.format:
 		if args.format[0] == "list":
-			debug(printRes(list(filter(None, printstuff))), "response")
+			print(printRes(list(filter(None, printstuff))))
 		elif args.format[0] == "dict":
-			debug(printRes(printstuffDict), "debug")
+			print(printRes(printstuffDict))
 		elif args.format[0] == "string" or args.format[0] == "str":
 			for stf in printstuff[2:]:
 				if stf:
